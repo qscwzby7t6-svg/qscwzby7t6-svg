@@ -194,20 +194,53 @@ step7_install_python_deps() {
     chmod -R 755 data/
     log_info "数据目录创建完成"
     
-    # 安装基础包
-    log_info "安装numpy和scipy..."
-    pip install numpy==1.24.0 scipy==1.11.0 > /dev/null 2>&1
+    # 单独安装numpy（使用预编译wheel避免编译问题）
+    echo ""
+    log_info "安装numpy..."
+    pip install numpy --prefer-binary --no-build-isolation > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        log_success "numpy和scipy安装完成"
+        log_success "numpy安装完成"
     else
-        log_warning "numpy或scipy安装失败，尝试使用兼容版本..."
-        pip install "numpy>=1.24.0,<2.0.0" "scipy>=1.11.0,<1.14.0" > /dev/null 2>&1
+        log_warning "numpy安装失败，尝试备用方案..."
+        pip install numpy==1.23.5 --prefer-binary --no-cache-dir > /dev/null 2>&1
+    fi
+    
+    # 单独安装scipy
+    echo ""
+    log_info "安装scipy（这可能需要几分钟）..."
+    pip install scipy --prefer-binary --no-build-isolation > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        log_success "scipy安装完成"
+    else
+        log_warning "scipy安装失败，尝试备用版本..."
+        pip install scipy==1.10.1 --prefer-binary --no-cache-dir > /dev/null 2>&1
+    fi
+    
+    # 单独安装soundfile
+    echo ""
+    log_info "安装soundfile..."
+    pip install soundfile --prefer-binary > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        log_success "soundfile安装完成"
+    else
+        log_warning "soundfile安装失败，尝试备用方案..."
+        pip install pysoundfile --prefer-binary > /dev/null 2>&1
+    fi
+    
+    # 单独安装librosa
+    echo ""
+    log_info "安装librosa（这可能需要几分钟）..."
+    pip install librosa --prefer-binary > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        log_success "librosa安装完成"
+    else
+        log_warning "librosa安装失败，部分音频分析功能将不可用"
     fi
     
     # 安装PyTorch
     echo ""
     log_info "安装PyTorch CPU版本（较大，请耐心等待）..."
-    pip install torch==2.0.0 torchaudio==2.0.0 --index-url https://download.pytorch.org/whl/cpu > /dev/null 2>&1
+    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         log_success "PyTorch安装完成"
     else
@@ -217,12 +250,9 @@ step7_install_python_deps() {
     # 安装其他依赖
     echo ""
     log_info "安装其他Python依赖..."
-    pip install -r requirements.txt > /dev/null 2>&1
+    pip install pydub matplotlib pydantic pydantic-settings streamlit fastapi uvicorn pytest pytest-asyncio > /dev/null 2>&1
     if [ $? -eq 0 ]; then
-        log_success "Python依赖安装完成"
-    else
-        log_warning "部分依赖安装失败，尝试单独安装..."
-        pip install librosa soundfile pydub matplotlib pydantic pydantic-settings streamlit fastapi uvicorn pytest pytest-asyncio > /dev/null 2>&1
+        log_success "其他依赖安装完成"
     fi
     
     echo ""
